@@ -7,7 +7,7 @@ import { CheckIcon, CloseIcon, SearchIcon } from "@/components/icons";
 import { Toast, type ToastState } from "@/components/Toast";
 import { AgentBadge, Button, QuadChip, Segmented, TagChip, cx } from "@/components/ui";
 import { toISODate } from "@/lib/dates";
-import { QUADRANTS, quadrantKey, type Area, type Tag, type Task } from "@/lib/model";
+import { QUADRANTS, quadrantKey, type Tag, type Task } from "@/lib/model";
 
 const levelClass = [
   "bg-surface-2",
@@ -19,11 +19,11 @@ const levelClass = [
 const level = (n: number) => (n === 0 ? 0 : n === 1 ? 1 : n <= 3 ? 2 : n <= 5 ? 3 : 4);
 const fmtDay = (iso: string, opts: Intl.DateTimeFormatOptions) => new Date(`${iso}T12:00:00`).toLocaleDateString("en-GB", opts);
 
-export function History({ year, years, initialTasks, tags }: { year: number; years: number[]; initialTasks: Task[]; tags: Tag[] }) {
+export function History({ year, years, initialTasks, tags, areas }: { year: number; years: number[]; initialTasks: Task[]; tags: Tag[]; areas: string[] }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"all" | "done" | "dropped">("all");
-  const [area, setArea] = useState<"all" | Area>("all");
+  const [area, setArea] = useState("all");
   const [tag, setTag] = useState<string | null>(null);
   const [day, setDay] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -38,7 +38,7 @@ export function History({ year, years, initialTasks, tags }: { year: number; yea
         ({ t, day }) =>
           day.startsWith(`${year}-`) &&
           (status === "all" || t.status === status) &&
-          (area === "all" || t.area === area) &&
+          (area === "all" || t.area.toLowerCase() === area.toLowerCase()) &&
           (!tag || t.tags.some((n) => n.toLowerCase() === tag.toLowerCase())) &&
           (!needle || `${t.title}\n${t.notes}`.toLowerCase().includes(needle)),
       );
@@ -178,11 +178,7 @@ export function History({ year, years, initialTasks, tags }: { year: number; yea
           label="Area"
           value={area}
           onChange={setArea}
-          options={[
-            { value: "all", label: "Everything" },
-            { value: "work", label: "Work" },
-            { value: "personal", label: "Personal" },
-          ]}
+          options={[{ value: "all", label: "Everything" }, ...areas.map((a) => ({ value: a, label: a }))]}
         />
         {tag && (
           <Button size="sm" variant="ghost" onClick={() => setTag(null)}>

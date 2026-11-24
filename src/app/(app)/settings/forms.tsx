@@ -13,12 +13,21 @@ import {
   updateProfileAction,
   type FormState,
 } from "@/app/actions/account";
-import { createTagAction, deleteTagAction, updateTagAction } from "@/app/actions/tasks";
-import { CopyIcon, TrashIcon } from "@/components/icons";
+import {
+  createAreaAction,
+  createTagAction,
+  deleteAreaAction,
+  deleteTagAction,
+  moveAreaAction,
+  renameAreaAction,
+  updateTagAction,
+  type Result,
+} from "@/app/actions/tasks";
+import { CopyIcon, DownIcon, TrashIcon, UpIcon } from "@/components/icons";
 import { ago } from "@/components/planner/TaskDrawer";
 import { Button, Field, QuadIcon, TagChip, cx, inputClass, inputSmClass } from "@/components/ui";
 import { COLOUR_KEYS, DEFAULT_COLOURS, DEPTH_MAX, DEPTH_MIN, PALETTE, coloursStyle, type ColourKey, type Colours } from "@/lib/colours";
-import { QUADRANTS, TAG_COLORS, type Quadrant, type Tag, type TagColor } from "@/lib/model";
+import { MAX_AREAS, QUADRANTS, TAG_COLORS, type Area, type Quadrant, type Tag, type TagColor } from "@/lib/model";
 
 function Message({ state }: { state: FormState }) {
   if (state?.error)
@@ -267,6 +276,109 @@ export function ColoursForm({ initial }: { initial: Colours }) {
       </div>
       <Message state={state} />
     </form>
+  );
+}
+
+export function AreaManager({ initialAreas }: { initialAreas: Area[] }) {
+  const [areas, setAreas] = useState(initialAreas);
+  const [name, setName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<{ id: number; moveTo: number } | null>(null);
+
+  const run = async (p: Promise<Result<Area[]>>) => {
+    const r = await p;
+    setError(r.ok ? null : r.error);
+    if (r.ok) setAreas(r.data);
+    return r.ok;
+  };
+  const count = (n: number) => `${n} ${n === 1 ? "task" : "tasks"}`;
+
+  return (
+    <>
+      <ul className="flex flex-col gap-2">
+        {areas.map((a, i) => (
+          <li key={a.id} className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                aria-label={`Rename ${a.name}`}
+                defaultValue={a.name}
+                maxLength={40}
+                onBlur={async (e) => {
+                  const el = e.currentTarget;
+                  const v = el.value.trim();
+                  if (v && v !== a.name && (await run(renameAreaAction(a.id, v)))) return;
+                  el.value = a.name;
+                }}
+                className={cx(inputSmClass, "w-48")}
+              />
+              <span className="text-sm text-muted">{count(a.tasks)}</span>
+              <div className="ml-auto flex gap-1">
+                <Button size="sm" variant="ghost" aria-label={`Move ${a.name} earlier`} disabled={i === 0} onClick={() => run(moveAreaAction(a.id, -1))}>
+                  <UpIcon size={15} />
+                </Button>
+                <Button size="sm" variant="ghost" aria-label={`Move ${a.name} later`} disabled={i === areas.length - 1} onClick={() => run(moveAreaAction(a.id, 1))}>
+                  <DownIcon size={15} />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  aria-label={`Delete area ${a.name}`}
+                  title={areas.length === 1 ? "You need at least one area" : undefined}
+                  disabled={areas.length === 1}
+                  onClick={() =>
+                    a.tasks > 0
+                      ? setDeleting({ id: a.id, moveTo: areas.find((x) => x.id !== a.id)!.id })
+                      : confirm(`Delete the area “${a.name}”?`) && run(deleteAreaAction(a.id))
+                  }
+                >
+                  <TrashIcon size={15} />
+                </Button>
+              </div>
+            </div>
+            {deleting?.id === a.id && (
+              <div role="group" aria-label={`Delete ${a.name}`} className="flex flex-wrap items-center gap-2 rounded-xl bg-hot-soft px-3 py-2.5 text-sm font-medium text-hot-ink">
+                Move its {count(a.tasks)} to
+                <select
+                  aria-label="Move tasks to"
+                  value={deleting.moveTo}
+                  onChange={(e) => setDeleting({ ...deleting, moveTo: Number(e.target.value) })}
+                  className={cx(inputSmClass, "w-auto")}
+                >
+                  {areas
+                    .filter((x) => x.id !== a.id)
+                    .map((x) => (
+                      <option key={x.id} value={x.id}>
+                        {x.name}
+                      </option>
+                    ))}
+                </select>
+                <Button size="sm" variant="danger" onClick={async () => (await run(deleteAreaAction(a.id, deleting.moveTo))) && setDeleting(null)}>
+                  Move and delete
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setDeleting(null)}>
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+      {areas.length < MAX_AREAS ? (
+        <form
+          className="flex flex-wrap gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (name.trim()) run(createAreaAction(name.trim())).then((ok) => ok && setName(""));
+          }}
+        >
+          <input aria-label="New area name" placeholder="New area" maxLength={40} value={name} onChange={(e) => setName(e.target.value)} className={cx(inputClass, "w-56")} />
+          <Button type="submit">Add area</Button>
+        </form>
+      ) : (
+        <p className="text-sm text-muted">You have {MAX_AREAS} areas, the most allowed. Delete one to add another.</p>
+      )}
+      {error && <Message state={{ error }} />}
+    </>
   );
 }
 

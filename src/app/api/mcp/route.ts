@@ -4,12 +4,13 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { actorFromBearer, type Actor } from "@/lib/auth";
 import { UserError } from "@/lib/db";
 import { todayISO } from "@/lib/dates";
-import { AREAS, QUADRANTS, STATUSES } from "@/lib/model";
+import { QUADRANTS, STATUSES } from "@/lib/model";
 import * as tasks from "@/lib/tasks";
 
 const INSTRUCTIONS = `ODOT is a personal task planner built on the Eisenhower matrix.
 Every task has a quadrant: ${QUADRANTS.map((q) => `${q.id} = ${q.title} (${q.sub})`).join("; ")}.
 A task with quadrant null sits in the Inbox, waiting to be classified. Classifying Inbox tasks is a common job: read each one, then set quadrant, priority, area, tags and dueDate with update_task.
+Every task belongs to exactly one area, a top-level bucket such as Work or Personal. The person manages their own list of areas; call list_areas to see it. You can't create areas, so use the closest existing one.
 Status is todo, doing, done or dropped. Completing a repeating task creates its next occurrence automatically.
 Deleted tasks go to the trash, where the user can restore them. Every change you make is logged under your token's name.
 Dates are YYYY-MM-DD. Today's date on the server is in the response of list_tasks as "today".`;
@@ -45,7 +46,7 @@ function buildServer(actor: Actor) {
       inputSchema: {
         status: z.array(z.enum(STATUSES)).optional().describe("Defaults to [\"todo\", \"doing\"]"),
         quadrant: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal("inbox")]).optional(),
-        area: z.enum(AREAS).optional(),
+        area: z.string().optional().describe("Area name from list_areas"),
         tag: z.string().optional(),
         search: z.string().optional().describe("Matches title or notes"),
         dueBefore: z.string().optional().describe("YYYY-MM-DD, inclusive. Use today's date to find due and overdue tasks."),
@@ -120,6 +121,17 @@ function buildServer(actor: Actor) {
     "list_tags",
     { title: "List tags", description: "The user's tags and their colours.", inputSchema: {}, annotations: { readOnlyHint: true } },
     tool(() => tasks.listTags(actor.userId)),
+  );
+
+  server.registerTool(
+    "list_areas",
+    {
+      title: "List areas",
+      description: "The person's areas in tab order, with how many tasks each holds. New tasks without an area go to the first one.",
+      inputSchema: {},
+      annotations: { readOnlyHint: true },
+    },
+    tool(() => tasks.listAreas(actor.userId).map(({ name, tasks }) => ({ name, tasks }))),
   );
 
   return server;

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type SubmitEvent } from "react";
 import { activeTasksAction, createTaskAction, deleteTaskAction, restoreTaskAction, updateTaskAction } from "@/app/actions/tasks";
 import { addDays, dueLabel, parseISODate, toISODate, todayISO } from "@/lib/dates";
-import { AREAS, AREA_LABEL, PRIORITY_RANK, QUADRANTS, isClosed, type Area, type Quadrant, type Tag, type TagColor, type Task, type TaskPatch } from "@/lib/model";
+import { PRIORITY_RANK, QUADRANTS, isClosed, type Quadrant, type Tag, type TagColor, type Task, type TaskPatch } from "@/lib/model";
 import { PREFS_COOKIE, type Prefs, type SortKey } from "@/lib/prefs";
 import { BoardIcon, InboxIcon, ListIcon, MatrixIcon, PlusIcon, SearchIcon, TargetIcon } from "../icons";
 import { Toast, type ToastState } from "../Toast";
@@ -52,23 +52,28 @@ const COMPARE: Record<SortKey, (a: Task, b: Task) => number> = {
 export function Planner({
   initialTasks,
   initialTags,
+  areas,
   initialPrefs,
   serverToday,
 }: {
   initialTasks: Task[];
   initialTags: Tag[];
+  /** Area names in tab order. */
+  areas: string[];
   initialPrefs: Prefs;
   serverToday: string;
 }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [tags, setTags] = useState(initialTags);
   const [prefs, setPrefs] = useState(initialPrefs);
+  // A saved tab whose area was renamed or deleted falls back to All.
+  const area = areas.some((a) => a.toLowerCase() === prefs.area.toLowerCase()) ? prefs.area : "all";
   const [tag, setTag] = useState<string | null>(null);
   const [quad, setQuad] = useState<QuadFilter>("all");
   const [q, setQ] = useState("");
   const [draft, setDraft] = useState("");
   const [addQuad, setAddQuad] = useState<Quadrant>(null);
-  const [addArea, setAddArea] = useState<Area>("work");
+  const [addArea, setAddArea] = useState(areas[0] ?? "");
   const [openId, setOpenId] = useState<number | null>(null);
   const [toast, setToast] = useState<ToastState | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -164,7 +169,7 @@ export function Planner({
     const r = await createTaskAction({
       title,
       quadrant: addQuad,
-      area: prefs.area === "all" ? addArea : prefs.area,
+      area: area === "all" ? addArea : area,
       tags: tag ? [tag] : [],
     });
     if (!r.ok) {
@@ -186,10 +191,10 @@ export function Planner({
 
     const todays = tasks.filter((t) => live(t) || doneToday(t));
     const shown = tasks.filter((t) => live(t) || showDone(t));
-    const areaCount = { all: shown.length, work: 0, personal: 0 };
-    for (const t of shown) areaCount[t.area]++;
+    const areaCount = new Map([["all", shown.length]]);
+    for (const t of shown) areaCount.set(t.area.toLowerCase(), (areaCount.get(t.area.toLowerCase()) ?? 0) + 1);
 
-    const inArea = (t: Task) => prefs.area === "all" || t.area === prefs.area;
+    const inArea = (t: Task) => area === "all" || t.area.toLowerCase() === area.toLowerCase();
     const scope = shown.filter(inArea);
     const tagCount = new Map<string, number>();
     for (const t of scope) for (const n of t.tags) tagCount.set(n.toLowerCase(), (tagCount.get(n.toLowerCase()) ?? 0) + 1);
@@ -223,7 +228,7 @@ export function Planner({
       nextQ2: open.find((t) => t.quadrant === 2) ?? null,
       inbox: open.filter((t) => t.quadrant === null).length,
     };
-  }, [tasks, prefs, tag, quad, q, today]);
+  }, [tasks, prefs, area, tag, quad, q, today]);
 
   const tagColor = useMemo(() => {
     const m = new Map(tags.map((t) => [t.name.toLowerCase(), t.color]));
@@ -285,19 +290,13 @@ export function Planner({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Segmented
             label="Area"
-            value={prefs.area}
+            value={area}
             onChange={(area) => update({ area })}
-            options={(
-              [
-                ["all", "All"],
-                ["work", "Work"],
-                ["personal", "Personal"],
-              ] as const
-            ).map(([value, label]) => ({
+            options={["all", ...areas].map((value) => ({
               value,
               label: (
                 <>
-                  {label} <span className="text-[12.5px] text-muted">{d.areaCount[value]}</span>
+                  {value === "all" ? "All" : value} <span className="text-[12.5px] text-muted">{d.areaCount.get(value.toLowerCase()) ?? 0}</span>
                 </>
               ),
             }))}
@@ -413,15 +412,13 @@ export function Planner({
             onChange={(e) => setDraft(e.target.value)}
             className={cx(inputClass, "flex-[1_1_260px]")}
           />
-          {/* Under a Work or Personal tab the tab decides, so the picker only shows under All. */}
-          {prefs.area === "all" && (
-            <Segmented
-              label="Area for the new task"
-              size="sm"
-              value={addArea}
-              onChange={setAddArea}
-              options={AREAS.map((a) => ({ value: a, label: AREA_LABEL[a] }))}
-            />
+          {/* Under an area tab the tab decides, so the picker only shows under All. */}
+          {area === "all" && (
+            <select aria-label="Area for the new task" value={addArea} onChange={(e) => setAddArea(e.target.value)} className={cx(inputClass, "w-auto")}>
+              {areas.map((a) => (
+                <option key={a}>{a}</option>
+              ))}
+            </select>
           )}
           <div role="group" aria-label="Quadrant for the new task" className="flex gap-1.5">
             {([null, 1, 2, 3, 4] as Quadrant[]).map((v) => (
@@ -476,7 +473,7 @@ export function Planner({
       </p>
 
       {openTask && (
-        <TaskDrawer key={openTask.id} task={openTask} tags={tags} today={today} onClose={() => setOpenId(null)} onPatch={patch} onDelete={remove} />
+        <TaskDrawer key={openTask.id} task={openTask} tags={tags} areas={areas} today={today} onClose={() => setOpenId(null)} onPatch={patch} onDelete={remove} />
       )}
       <Toast toast={toast} onDone={clearToast} />
     </div>

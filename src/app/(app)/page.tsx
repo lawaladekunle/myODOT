@@ -3,7 +3,7 @@ import { Planner } from "@/components/planner/Planner";
 import { requireUser } from "@/lib/auth";
 import { todayISO } from "@/lib/dates";
 import { PREFS_COOKIE, parsePrefs } from "@/lib/prefs";
-import { listActiveTasks, listTags } from "@/lib/tasks";
+import { listActiveTasks, listAreas, listTags } from "@/lib/tasks";
 
 export default async function PlannerPage() {
   const user = await requireUser();
@@ -12,6 +12,7 @@ export default async function PlannerPage() {
     <Planner
       initialTasks={listActiveTasks(user.id)}
       initialTags={listTags(user.id)}
+      areas={listAreas(user.id).map((a) => a.name)}
       initialPrefs={prefs}
       serverToday={todayISO()}
     />

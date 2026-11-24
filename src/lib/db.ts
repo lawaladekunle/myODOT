@@ -74,6 +74,24 @@ const MIGRATIONS = [
   `,
   // Quadrant colours and depth as JSON; null means the defaults in lib/colours.ts.
   `ALTER TABLE users ADD COLUMN colours TEXT;`,
+  // Areas become a per-person list. Existing work/personal tasks move to the matching new rows.
+  `
+  CREATE TABLE areas (
+    id INTEGER PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL COLLATE NOCASE,
+    position INTEGER NOT NULL DEFAULT 0,
+    UNIQUE (user_id, name)
+  );
+  INSERT INTO areas (user_id, name, position) SELECT id, 'Work', 0 FROM users;
+  INSERT INTO areas (user_id, name, position) SELECT id, 'Personal', 1 FROM users;
+  ALTER TABLE tasks ADD COLUMN area_id INTEGER REFERENCES areas(id);
+  UPDATE tasks SET area_id = (
+    SELECT a.id FROM areas a WHERE a.user_id = tasks.user_id AND a.name = CASE tasks.area WHEN 'work' THEN 'Work' ELSE 'Personal' END
+  );
+  ALTER TABLE tasks DROP COLUMN area;
+  CREATE INDEX tasks_area ON tasks (area_id);
+  `,
 ];
 
 function open() {

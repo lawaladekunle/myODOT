@@ -4,7 +4,7 @@ import { db, nowISO, tx, UserError } from "./db";
 import type { Actor } from "./auth";
 import { nextDue, parseISODate, toISODate, todayISO } from "./dates";
 import {
-  AREAS,
+  MAX_AREAS,
   PRIORITIES,
   REPEATS,
   STATUSES,
@@ -35,7 +35,7 @@ export const taskShape = {
     .describe("Eisenhower quadrant. 1 Do First (urgent, important). 2 Schedule (important, not urgent). 3 Delegate (urgent, not important). 4 Eliminate (neither). null puts the task in the Inbox, unclassified."),
   status: z.enum(STATUSES).describe("todo, doing (in progress), done, or dropped (decided not to do it)"),
   priority: z.enum(PRIORITIES).describe("high, medium or low"),
-  area: z.enum(AREAS).describe("work or personal"),
+  area: z.string().trim().min(1).max(40).describe("Area name, such as Work or Personal. Must be one of the person's areas from list_areas. Each task has exactly one."),
   dueDate: isoDate.nullable().describe("Due date as YYYY-MM-DD, or null for no date"),
   repeat: z.enum(REPEATS).nullable().describe("Repeat rule. Completing a repeating task creates the next occurrence. null for one-off tasks."),
   tags: z.array(z.string().trim().min(1).max(40)).max(20).describe("Tag names. Unknown names create new tags. Replaces the task's whole tag list."),
@@ -57,7 +57,7 @@ const SELECT = `
     SELECT json_group_array(name) FROM (
       SELECT g.name FROM task_tags tt JOIN tags g ON g.id = tt.tag_id WHERE tt.task_id = t.id ORDER BY g.name
     )
-  ) AS tag_names
+  ) AS tag_names, (SELECT name FROM areas a WHERE a.id = t.area_id) AS area_name
   FROM tasks t`;
 
 type Row = Record<string, string | number | null>;
@@ -70,7 +70,7 @@ function toTask(r: Row): Task {
     quadrant: (r.quadrant as Task["quadrant"]) ?? null,
     status: r.status as Status,
     priority: r.priority as Task["priority"],
-    area: r.area as Area,
+    area: (r.area_name as string) ?? "",
     dueDate: (r.due_date as string) ?? null,
     repeat: (r.repeat as Task["repeat"]) ?? null,
     tags: JSON.parse((r.tag_names as string) ?? "[]"),
@@ -86,7 +86,8 @@ function toTask(r: Row): Task {
 export type TaskFilter = {
   status?: Status[];
   quadrant?: 1 | 2 | 3 | 4 | "inbox";
-  area?: Area;
+  /** Area name. */
+  area?: string;
   tag?: string;
   search?: string;
   /** Due on or before this YYYY-MM-DD date. */
@@ -114,7 +115,7 @@ export function listTasks(userId: number, f: TaskFilter = {}): Task[] {
     p.q = f.quadrant;
   }
   if (f.area) {
-    where.push("t.area = :area");
+    where.push("t.area_id = (SELECT id FROM areas WHERE user_id = :uid AND name = :area)");
     p.area = f.area;
   }
   if (f.tag) {
@@ -215,7 +216,7 @@ function insertTask(actor: Actor, d: z.infer<typeof createSchema>, repeatedFrom:
   const status = d.status ?? "todo";
   const { lastInsertRowid } = db()
     .prepare(
-      `INSERT INTO tasks (user_id, title, notes, quadrant, status, priority, area, due_date, repeat, repeated_from, created_by, created_at, updated_at, started_at, completed_at)
+      `INSERT INTO tasks (user_id, title, notes, quadrant, status, priority, area_id, due_date, repeat, repeated_from, created_by, created_at, updated_at, started_at, completed_at)
        VALUES (:uid, :title, :notes, :quadrant, :status, :priority, :area, :due, :repeat, :from, :by, :now, :now, :started, :completed)`,
     )
     .run({
@@ -225,7 +226,7 @@ function insertTask(actor: Actor, d: z.infer<typeof createSchema>, repeatedFrom:
       quadrant: d.quadrant ?? null,
       status,
       priority: d.priority ?? "medium",
-      area: d.area ?? "personal",
+      area: areaId(actor.userId, d.area),
       due: d.dueDate ?? null,
       repeat: d.repeat ?? null,
       from: repeatedFrom,
@@ -263,7 +264,7 @@ export function updateTask(actor: Actor, id: number, input: unknown): { task: Ta
     const m = { ...before, ...p };
     db()
       .prepare(
-        `UPDATE tasks SET title = :title, notes = :notes, quadrant = :quadrant, status = :status, priority = :priority, area = :area,
+        `UPDATE tasks SET title = :title, notes = :notes, quadrant = :quadrant, status = :status, priority = :priority, area_id = COALESCE(:area, area_id),
          due_date = :due, repeat = :repeat, started_at = :started, completed_at = :completed, updated_at = :now WHERE id = :id`,
       )
       .run({
@@ -273,7 +274,7 @@ export function updateTask(actor: Actor, id: number, input: unknown): { task: Ta
         quadrant: m.quadrant,
         status,
         priority: m.priority,
-        area: m.area,
+        area: p.area === undefined ? null : areaId(actor.userId, p.area),
         due: m.dueDate,
         repeat: m.repeat,
         started: startedAt,
@@ -382,11 +383,87 @@ export function deleteTag(userId: number, id: number) {
   db().prepare("DELETE FROM tags WHERE id = ? AND user_id = ?").run(id, userId);
 }
 
+// ---- areas ----
+
+export function listAreas(userId: number): Area[] {
+  return (
+    db()
+      .prepare("SELECT a.id, a.name, (SELECT COUNT(*) FROM tasks t WHERE t.area_id = a.id) AS tasks FROM areas a WHERE a.user_id = ? ORDER BY a.position, a.id")
+      .all(userId) as Area[]
+  ).map((a) => ({ ...a }));
+}
+
+/** The id of the named area, or of the first area when no name is given. */
+function areaId(userId: number, name?: string): number {
+  const r = (
+    name === undefined
+      ? db().prepare("SELECT id FROM areas WHERE user_id = ? ORDER BY position, id LIMIT 1").get(userId)
+      : db().prepare("SELECT id FROM areas WHERE user_id = ? AND name = ?").get(userId, name.trim())
+  ) as { id: number } | undefined;
+  if (r) return r.id;
+  throw new UserError(`Unknown area "${name}". Use one of: ${listAreas(userId).map((a) => a.name).join(", ")}.`);
+}
+
+const areaName = z.string().trim().min(1, "Enter a name.").max(40);
+
+function uniqueName<T>(fn: () => T): T {
+  try {
+    return fn();
+  } catch (e) {
+    if (e instanceof Error && /UNIQUE/.test(e.message)) throw new UserError("You already have an area with that name.");
+    throw e;
+  }
+}
+
+export function createArea(userId: number, name: string) {
+  const n = parse(areaName, name);
+  tx(() => {
+    const { count, last } = db().prepare("SELECT COUNT(*) AS count, MAX(position) AS last FROM areas WHERE user_id = ?").get(userId) as { count: number; last: number | null };
+    if (count >= MAX_AREAS) throw new UserError(`You can have up to ${MAX_AREAS} areas.`);
+    uniqueName(() => db().prepare("INSERT INTO areas (user_id, name, position) VALUES (?, ?, ?)").run(userId, n, (last ?? -1) + 1));
+  });
+}
+
+export function renameArea(userId: number, id: number, name: string) {
+  const n = parse(areaName, name);
+  const { changes } = uniqueName(() => db().prepare("UPDATE areas SET name = ? WHERE id = ? AND user_id = ?").run(n, id, userId));
+  if (!changes) throw new UserError("Area not found.");
+}
+
+/** Moves an area one place earlier (-1) or later (1) in the tab order. */
+export function moveArea(userId: number, id: number, dir: -1 | 1) {
+  tx(() => {
+    const ids = listAreas(userId).map((a) => a.id);
+    const i = ids.indexOf(id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    const set = db().prepare("UPDATE areas SET position = ? WHERE id = ?");
+    ids.forEach((aid, pos) => set.run(pos, aid));
+  });
+}
+
+/** Deletes an area. Its tasks, including closed and trashed ones, move to `moveTo` first. */
+export function deleteArea(userId: number, id: number, moveTo?: number) {
+  tx(() => {
+    const areas = listAreas(userId);
+    const area = areas.find((a) => a.id === id);
+    if (!area) throw new UserError("Area not found.");
+    if (areas.length === 1) throw new UserError("You need at least one area.");
+    if (area.tasks > 0) {
+      if (moveTo === id || !areas.some((a) => a.id === moveTo)) throw new UserError(`Pick another area for its ${area.tasks} tasks.`);
+      db().prepare("UPDATE tasks SET area_id = ? WHERE area_id = ? AND user_id = ?").run(moveTo!, id, userId);
+    }
+    db().prepare("DELETE FROM areas WHERE id = ? AND user_id = ?").run(id, userId);
+  });
+}
+
 // ---- export ----
 
 export function exportData(userId: number) {
   return {
     exportedAt: nowISO(),
+    areas: listAreas(userId),
     tags: listTags(userId),
     tasks: [...listTasks(userId, { limit: 1e9 }), ...listTasks(userId, { deleted: true, limit: 1e9 })],
     activity: db()

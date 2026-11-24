@@ -2,13 +2,11 @@
 
 export const STATUSES = ["todo", "doing", "done", "dropped"] as const;
 export const PRIORITIES = ["high", "medium", "low"] as const;
-export const AREAS = ["work", "personal"] as const;
 export const REPEATS = ["daily", "weekly", "monthly", "yearly"] as const;
 export const TAG_COLORS = ["blue", "green", "purple", "red", "amber", "teal", "gray", "orange", "pink", "indigo"] as const;
 
 export type Status = (typeof STATUSES)[number];
 export type Priority = (typeof PRIORITIES)[number];
-export type Area = (typeof AREAS)[number];
 export type Repeat = (typeof REPEATS)[number];
 export type TagColor = (typeof TAG_COLORS)[number];
 /** 1 to 4 are the Eisenhower quadrants. null means the task sits in the Inbox, not yet classified. */
@@ -21,7 +19,8 @@ export type Task = {
   quadrant: Quadrant;
   status: Status;
   priority: Priority;
-  area: Area;
+  /** Name of one of the person's areas, such as "Work". */
+  area: string;
   dueDate: string | null;
   repeat: Repeat | null;
   tags: string[];
@@ -36,6 +35,10 @@ export type Task = {
 export type TaskPatch = Partial<Pick<Task, "title" | "notes" | "quadrant" | "status" | "priority" | "area" | "dueDate" | "repeat" | "tags">>;
 
 export type Tag = { id: number; name: string; color: TagColor };
+/** A top-level bucket shown as a planner tab. Each task belongs to exactly one. */
+export type Area = { id: number; name: string; tasks: number };
+export const MAX_AREAS = 8;
+export const DEFAULT_AREAS = ["Work", "Personal"];
 
 export type Activity = {
   id: number;
@@ -56,7 +59,6 @@ export const QUADRANTS = [
 export const STATUS_LABEL: Record<Status, string> = { todo: "To do", doing: "In progress", done: "Done", dropped: "Dropped" };
 export const PRIORITY_LABEL: Record<Priority, string> = { high: "High", medium: "Medium", low: "Low" };
 export const PRIORITY_RANK: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
-export const AREA_LABEL: Record<Area, string> = { work: "Work", personal: "Personal" };
 export const REPEAT_LABEL: Record<Repeat, string> = { daily: "Daily", weekly: "Weekly", monthly: "Monthly", yearly: "Yearly" };
 
 export const DEFAULT_TAGS: [string, TagColor][] = [

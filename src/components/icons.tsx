@@ -48,6 +48,8 @@ export const UsersIcon = icon(<><circle cx="9" cy="8" r="4" /><path d="M2 21a7 7
 export const TagIcon = icon(<><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z" /><circle cx="7.5" cy="7.5" r="1.5" /></>);
 export const PlayIcon = icon(<path d="M7 4.5l11 7.5-11 7.5z" />);
 export const BackIcon = icon(<path d="M15 6l-6 6 6 6" />);
+export const UpIcon = icon(<path d="M6 15l6-6 6 6" />);
+export const DownIcon = icon(<path d="M6 9l6 6 6-6" />);
 export const TargetIcon = icon(<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></>);
 export const CalendarIcon = icon(<><rect x="4" y="5" width="16" height="15" rx="3" /><path d="M8 3v4M16 3v4M4 10h16" /></>);
 export const UserIcon = icon(<><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></>);

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { DownloadIcon } from "@/components/icons";
 import { getColours, listApiTokens, listUsers, requireUser } from "@/lib/auth";
-import { listTags } from "@/lib/tasks";
-import { AgentAccess, ColoursForm, PasswordForm, People, ProfileForm, TagManager } from "./forms";
+import { listAreas, listTags } from "@/lib/tasks";
+import { AgentAccess, AreaManager, ColoursForm, PasswordForm, People, ProfileForm, TagManager } from "./forms";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -26,6 +26,10 @@ export default async function SettingsPage() {
         description="Give an AI agent its own token. It connects over MCP, can read and change your tasks, and every change it makes shows up in the task's activity under the token's name."
       >
         <AgentAccess tokens={listApiTokens(user.id)} />
+      </Section>
+
+      <Section title="Areas" description="The tabs at the top of the planner. Each task belongs to one area, and All shows every area together.">
+        <AreaManager initialAreas={listAreas(user.id)} />
       </Section>
 
       <Section title="Colours" description="Pick a colour for each quadrant and how strong the tint is. Only you see your colours.">

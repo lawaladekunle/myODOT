@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { requireUser } from "@/lib/auth";
-import { historyYears, listTags, listTasks } from "@/lib/tasks";
+import { historyYears, listAreas, listTags, listTasks } from "@/lib/tasks";
 import { History } from "./History";
 
 export const metadata: Metadata = { title: "History" };
@@ -18,5 +18,5 @@ export default async function HistoryPage({ searchParams }: PageProps<"/history"
     completedTo: `${year + 1}-01-02T00:00:00.000Z`,
     limit: 100_000,
   });
-  return <History key={year} year={year} years={years} initialTasks={tasks} tags={listTags(user.id)} />;
+  return <History key={year} year={year} years={years} initialTasks={tasks} tags={listTags(user.id)} areas={listAreas(user.id).map((a) => a.name)} />;
 }

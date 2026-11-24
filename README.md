@@ -33,13 +33,13 @@ flowchart TD
 | `quadrant` | 1 to 4, or null | null means Inbox |
 | `status` | todo, doing, done, dropped | Board columns. done and dropped land in History |
 | `priority` | high, medium, low | |
-| `area` | work, personal | Top tabs |
+| `area_id` | one of the person's areas | Top tabs. Each person manages up to 8 areas in Settings, Work and Personal to start |
 | `due_date` | YYYY-MM-DD or null | Calendar date, no time zone |
 | `repeat` | daily, weekly, monthly, yearly or null | |
 | `created_at`, `started_at`, `completed_at`, `deleted_at` | ISO timestamps | |
 | `created_by` | user or agent | |
 
-Tags, the task-to-tag links, users, sessions, API tokens and the activity log each have their own table. The schema and migrations are in `src/lib/db.ts`.
+Areas, tags, the task-to-tag links, users, sessions, API tokens and the activity log each have their own table. The schema and migrations are in `src/lib/db.ts`.
 
 ## Run it locally
 
@@ -96,7 +96,7 @@ Then run `docker compose up -d` on the VPS without `--build`.
 
    Other MCP clients use the same URL with Streamable HTTP and the same header.
 
-The agent acts as the person who created the token. Its tools are `list_tasks`, `get_task`, `create_task`, `update_task`, `complete_task`, `delete_task` and `list_tags`. The server's instructions explain the quadrants and the Inbox, so a prompt like "classify my inbox" works without extra setup. Revoke a token in Settings to cut off access.
+The agent acts as the person who created the token. Its tools are `list_tasks`, `get_task`, `create_task`, `update_task`, `complete_task`, `delete_task`, `list_tags` and `list_areas`. The agent can use your areas but can't create new ones. The server's instructions explain the quadrants and the Inbox, so a prompt like "classify my inbox" works without extra setup. Revoke a token in Settings to cut off access.
 
 ## Back up
 

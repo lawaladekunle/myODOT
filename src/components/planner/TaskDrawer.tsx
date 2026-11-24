@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { activityAction } from "@/app/actions/tasks";
 import { addDays, parseISODate } from "@/lib/dates";
 import {
-  AREA_LABEL,
   PRIORITY_LABEL,
   QUADRANTS,
   REPEAT_LABEL,
@@ -22,6 +21,8 @@ import { Button, QuadChip, Segmented, cx, inputClass } from "../ui";
 type Props = {
   task: Task;
   tags: Tag[];
+  /** Area names in tab order. */
+  areas: string[];
   today: string;
   onClose: () => void;
   onPatch: (id: number, patch: TaskPatch) => void;
@@ -29,7 +30,7 @@ type Props = {
 };
 
 /** Side sheet for editing every field of a task. Uses <dialog> for focus trapping and Esc handling. */
-export function TaskDrawer({ task, tags, today, onClose, onPatch, onDelete }: Props) {
+export function TaskDrawer({ task, tags, areas, today, onClose, onPatch, onDelete }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   // null means "not edited", so a change made elsewhere (say, by the agent) isn't overwritten on blur.
   const [title, setTitle] = useState<string | null>(null);
@@ -154,13 +155,11 @@ export function TaskDrawer({ task, tags, today, onClose, onPatch, onDelete }: Pr
               />
             </Row>
             <Row label="Area">
-              <Segmented
-                label="Area"
-                size="sm"
-                value={task.area}
-                onChange={(area) => patch({ area })}
-                options={(["work", "personal"] as const).map((a) => ({ value: a, label: AREA_LABEL[a] }))}
-              />
+              <select aria-label="Area" value={task.area} onChange={(e) => patch({ area: e.target.value })} className={cx(inputClass, "h-10")}>
+                {areas.map((a) => (
+                  <option key={a}>{a}</option>
+                ))}
+              </select>
             </Row>
           </div>
 
@@ -304,7 +303,8 @@ function fmt(field: string, v: unknown): string {
   if (v === null || v === undefined || (Array.isArray(v) && v.length === 0)) return "none";
   if (field === "status") return STATUS_LABEL[v as Status];
   if (field === "priority") return PRIORITY_LABEL[v as Task["priority"]];
-  if (field === "area") return AREA_LABEL[v as Task["area"]];
+  // Entries logged before custom areas stored "work" and "personal".
+  if (field === "area") return ({ work: "Work", personal: "Personal" } as Record<string, string>)[String(v)] ?? String(v);
   if (field === "repeat") return REPEAT_LABEL[v as Repeat];
   if (field === "dueDate") return parseISODate(String(v)).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   if (field === "tags") return (v as string[]).join(", ");

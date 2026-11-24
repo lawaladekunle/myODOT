@@ -71,3 +71,33 @@ export async function deleteTagAction(tagId: number) {
     return tasks.listTags(u.id);
   });
 }
+
+// Area actions return the full list so Settings can redraw from it.
+export async function createAreaAction(name: string) {
+  return run((u) => {
+    tasks.createArea(u.id, name);
+    return tasks.listAreas(u.id);
+  });
+}
+
+export async function renameAreaAction(areaId: number, name: string) {
+  return run((u) => {
+    tasks.renameArea(u.id, id(areaId), name);
+    return tasks.listAreas(u.id);
+  });
+}
+
+export async function moveAreaAction(areaId: number, dir: number) {
+  return run((u) => {
+    if (dir !== -1 && dir !== 1) throw new UserError("Invalid direction.");
+    tasks.moveArea(u.id, id(areaId), dir);
+    return tasks.listAreas(u.id);
+  });
+}
+
+export async function deleteAreaAction(areaId: number, moveTo?: number) {
+  return run((u) => {
+    tasks.deleteArea(u.id, id(areaId), moveTo === undefined ? undefined : id(moveTo));
+    return tasks.listAreas(u.id);
+  });
+}

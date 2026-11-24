@@ -5,7 +5,7 @@ import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { db, nowISO, tx, UserError } from "./db";
 import { coloursSchema, parseColours, type Colours } from "./colours";
-import { DEFAULT_TAGS } from "./model";
+import { DEFAULT_AREAS, DEFAULT_TAGS } from "./model";
 
 export type User = { id: number; email: string; name: string; isAdmin: boolean };
 /** Who is making a change. Agents act on behalf of the user who owns their API token. */
@@ -49,6 +49,8 @@ export async function createUser(input: { name: string; email: string; password:
       .run(email, name, hash, input.isAdmin ? 1 : 0);
     const addTag = db().prepare("INSERT INTO tags (user_id, name, color) VALUES (?, ?, ?)");
     for (const [tag, color] of DEFAULT_TAGS) addTag.run(lastInsertRowid, tag, color);
+    const addArea = db().prepare("INSERT INTO areas (user_id, name, position) VALUES (?, ?, ?)");
+    DEFAULT_AREAS.forEach((area, i) => addArea.run(lastInsertRowid, area, i));
     return Number(lastInsertRowid);
   });
 }
