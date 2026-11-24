@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import * as auth from "@/lib/auth";
+import { COLOUR_KEYS } from "@/lib/colours";
 import { UserError } from "@/lib/db";
 
 export type FormState = { error?: string; ok?: string; token?: string; email?: string } | undefined;
@@ -42,6 +43,15 @@ export async function updateProfileAction(_: FormState, fd: FormData) {
   return form(() => {
     auth.renameUser(u.id, str(fd, "name"));
     return { ok: "Name saved." };
+  });
+}
+
+export async function saveColoursAction(_: FormState, fd: FormData) {
+  const u = await auth.requireUser();
+  return form(() => {
+    // Pick fields by name: React adds its own $ACTION_* entries to the form data.
+    auth.setColours(u.id, { ...Object.fromEntries(COLOUR_KEYS.map((k) => [k, str(fd, k)])), depth: Number(fd.get("depth")) });
+    return { ok: "Colours saved." };
   });
 }
 

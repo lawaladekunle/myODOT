@@ -8,6 +8,7 @@ import {
   deleteUserAction,
   resetPasswordAction,
   revokeTokenAction,
+  saveColoursAction,
   setAdminAction,
   updateProfileAction,
   type FormState,
@@ -15,8 +16,9 @@ import {
 import { createTagAction, deleteTagAction, updateTagAction } from "@/app/actions/tasks";
 import { CopyIcon, TrashIcon } from "@/components/icons";
 import { ago } from "@/components/planner/TaskDrawer";
-import { Button, Field, TagChip, cx, inputClass, inputSmClass } from "@/components/ui";
-import { TAG_COLORS, type Tag, type TagColor } from "@/lib/model";
+import { Button, Field, QuadIcon, TagChip, cx, inputClass, inputSmClass } from "@/components/ui";
+import { COLOUR_KEYS, DEFAULT_COLOURS, DEPTH_MAX, DEPTH_MIN, PALETTE, coloursStyle, type ColourKey, type Colours } from "@/lib/colours";
+import { QUADRANTS, TAG_COLORS, type Quadrant, type Tag, type TagColor } from "@/lib/model";
 
 function Message({ state }: { state: FormState }) {
   if (state?.error)
@@ -152,6 +154,119 @@ export function AgentAccess({ tokens }: { tokens: { id: number; name: string; cr
         </ul>
       )}
     </>
+  );
+}
+
+const COLOUR_ROWS: { key: ColourKey; q: Quadrant; label: string }[] = [
+  ...QUADRANTS.map((m) => ({ key: `q${m.id}` as ColourKey, q: m.id, label: `${m.name} · ${m.title}` })),
+  { key: "inbox", q: null, label: "Inbox" },
+];
+const PALETTE_HEX = new Set<string>(PALETTE.map(([, hex]) => hex));
+const selectedRing = "ring-2 ring-fg ring-offset-2 ring-offset-card";
+
+export function ColoursForm({ initial }: { initial: Colours }) {
+  const [c, setC] = useState(initial);
+  const [state, action, pending] = useActionState(saveColoursAction, undefined);
+  const pick = (k: ColourKey, hex: string) => setC((v) => ({ ...v, [k]: hex }));
+  const depthLabel = c.depth === 0 ? "Default" : c.depth < 0 ? `Lighter ${-c.depth}` : `Deeper ${c.depth}`;
+
+  return (
+    <form action={action} className="flex flex-col gap-5">
+      {COLOUR_KEYS.map((k) => (
+        <input key={k} type="hidden" name={k} value={c[k]} />
+      ))}
+      <div className="grid gap-6 md:grid-cols-[1fr_280px]">
+        <div className="flex flex-col gap-4">
+          {COLOUR_ROWS.map((r) => {
+            const custom = !PALETTE_HEX.has(c[r.key].toLowerCase());
+            return (
+              <div key={r.key} role="group" aria-label={`${r.label} colour`} className="flex flex-col gap-2">
+                <span className="text-[13px] font-semibold text-muted">{r.label}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  {PALETTE.map(([name, hex]) => (
+                    <button
+                      key={hex}
+                      type="button"
+                      title={name}
+                      aria-label={name}
+                      aria-pressed={c[r.key].toLowerCase() === hex}
+                      onClick={() => pick(r.key, hex)}
+                      className={cx("size-6 rounded-full", c[r.key].toLowerCase() === hex && selectedRing)}
+                      style={{ background: hex }}
+                    />
+                  ))}
+                  <label
+                    title="Custom colour"
+                    className={cx("relative size-6 cursor-pointer rounded-full", custom && selectedRing)}
+                    style={{ background: custom ? c[r.key] : "conic-gradient(#e44, #ec4, #4c6, #4ae, #a4e, #e44)" }}
+                  >
+                    <input
+                      type="color"
+                      aria-label={`Custom colour for ${r.label}`}
+                      value={c[r.key]}
+                      onChange={(e) => pick(r.key, e.target.value)}
+                      className="absolute inset-0 size-full cursor-pointer opacity-0"
+                    />
+                  </label>
+                </div>
+              </div>
+            );
+          })}
+
+          <label className="flex flex-col gap-2">
+            <span className="flex items-baseline justify-between text-[13px] font-semibold text-muted">
+              Depth <span className="text-fg">{depthLabel}</span>
+            </span>
+            <input
+              type="range"
+              name="depth"
+              min={DEPTH_MIN}
+              max={DEPTH_MAX}
+              step={1}
+              value={c.depth}
+              onChange={(e) => setC((v) => ({ ...v, depth: Number(e.target.value) }))}
+              className="accent-fg"
+            />
+            <span aria-hidden="true" className="flex justify-between text-[12.5px] text-muted">
+              <span>Lighter</span>
+              <span>Default</span>
+              <span>Deeper</span>
+            </span>
+          </label>
+        </div>
+
+        <div className="flex flex-col gap-2 md:self-start">
+          <span className="text-[13px] font-semibold text-muted">Preview</span>
+          <div style={coloursStyle(c)} className="grid grid-cols-2 gap-2 rounded-2xl border border-line p-2">
+            <div className="q-inbox col-span-2 flex items-center gap-2 rounded-xl bg-q px-3 py-2.5">
+              <QuadIcon q={null} size={16} />
+              <span className="text-sm font-semibold">Inbox</span>
+              <span className="ml-auto rounded-md bg-q-chip px-2 py-0.5 text-xs font-bold">2 to sort</span>
+            </div>
+            {QUADRANTS.map((m) => (
+              <div key={m.id} className={cx(`q-q${m.id}`, "rounded-xl bg-q p-3")}>
+                <div className="flex items-center gap-1.5">
+                  <QuadIcon q={m.id} size={16} />
+                  <span className="text-sm font-bold">{m.name}</span>
+                </div>
+                <div className="mt-0.5 text-[12.5px] text-muted">{m.title}</div>
+                <span className="mt-2 inline-block rounded-md bg-q-chip px-2 py-0.5 text-xs font-bold">
+                  {m.name} · {m.title}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <Button type="submit" variant="primary" disabled={pending}>
+          Save colours
+        </Button>
+        <Button onClick={() => setC(DEFAULT_COLOURS)}>Reset to default</Button>
+      </div>
+      <Message state={state} />
+    </form>
   );
 }
 

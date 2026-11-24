@@ -72,6 +72,8 @@ const MIGRATIONS = [
   );
   CREATE INDEX activity_task ON activity (task_id);
   `,
+  // Quadrant colours and depth as JSON; null means the defaults in lib/colours.ts.
+  `ALTER TABLE users ADD COLUMN colours TEXT;`,
 ];
 
 function open() {

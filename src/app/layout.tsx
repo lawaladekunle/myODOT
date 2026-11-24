@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: { default: "ODOT", template: "%s · ODOT" },
+  title: { default: "ODO+", template: "%s · ODO+" },
   description: "Organise your priorities. Focus on what matters.",
 };
 

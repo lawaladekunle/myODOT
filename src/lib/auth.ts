@@ -4,6 +4,7 @@ import { cache } from "react";
 import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { db, nowISO, tx, UserError } from "./db";
+import { coloursSchema, parseColours, type Colours } from "./colours";
 import { DEFAULT_TAGS } from "./model";
 
 export type User = { id: number; email: string; name: string; isAdmin: boolean };
@@ -104,6 +105,17 @@ export function setAdmin(userId: number, isAdmin: boolean) {
 export function renameUser(userId: number, name: string) {
   if (!name.trim()) throw new UserError("Enter a name.");
   db().prepare("UPDATE users SET name = ? WHERE id = ?").run(name.trim(), userId);
+}
+
+export function getColours(userId: number): Colours {
+  const r = db().prepare("SELECT colours FROM users WHERE id = ?").get(userId) as { colours: string | null } | undefined;
+  return parseColours(r?.colours ?? null);
+}
+
+export function setColours(userId: number, input: unknown) {
+  const c = coloursSchema.safeParse(input);
+  if (!c.success) throw new UserError("Those colours aren't valid. Pick one for every quadrant.");
+  db().prepare("UPDATE users SET colours = ? WHERE id = ?").run(JSON.stringify(c.data), userId);
 }
 
 // ---- sessions ----

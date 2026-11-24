@@ -3,7 +3,8 @@ import { logoutAction } from "@/app/actions/account";
 import { LogOutIcon } from "@/components/icons";
 import { Logo } from "@/components/Logo";
 import { NavLinks } from "@/components/Nav";
-import { requireUser } from "@/lib/auth";
+import { getColours, requireUser } from "@/lib/auth";
+import { coloursStyle } from "@/lib/colours";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser();
@@ -25,7 +26,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </div>
         </div>
       </header>
-      <main>{children}</main>
+      <main style={coloursStyle(getColours(user.id))}>{children}</main>
     </>
   );
 }

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { DownloadIcon } from "@/components/icons";
-import { listApiTokens, listUsers, requireUser } from "@/lib/auth";
+import { getColours, listApiTokens, listUsers, requireUser } from "@/lib/auth";
 import { listTags } from "@/lib/tasks";
-import { AgentAccess, PasswordForm, People, ProfileForm, TagManager } from "./forms";
+import { AgentAccess, ColoursForm, PasswordForm, People, ProfileForm, TagManager } from "./forms";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -26,6 +26,10 @@ export default async function SettingsPage() {
         description="Give an AI agent its own token. It connects over MCP, can read and change your tasks, and every change it makes shows up in the task's activity under the token's name."
       >
         <AgentAccess tokens={listApiTokens(user.id)} />
+      </Section>
+
+      <Section title="Colours" description="Pick a colour for each quadrant and how strong the tint is. Only you see your colours.">
+        <ColoursForm initial={getColours(user.id)} />
       </Section>
 
       <Section title="Tags" description="Rename, recolour or delete tags. Deleting a tag removes it from its tasks but keeps the tasks.">

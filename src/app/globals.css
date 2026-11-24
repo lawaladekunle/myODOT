@@ -28,22 +28,9 @@
   --pri-low: #6b7280;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.08);
   --overlay: rgb(15 15 20 / 0.35);
-
-  --q0: #f3f6ff;
-  --q0-chip: #dfe9fc;
-  --q0-ink: #1d4fbf;
-  --q1: #faeded;
-  --q1-chip: #f3c9c6;
-  --q1-ink: #c0392b;
-  --q2: #eef4f0;
-  --q2-chip: #c9e3d2;
-  --q2-ink: #2e7d4f;
-  --q3: #f8f3ea;
-  --q3-chip: #f0dfbd;
-  --q3-ink: #a8691a;
-  --q4: #f0f0f3;
-  --q4-chip: #dcdce3;
-  --q4-ink: #55555c;
+  /* Lightness range for quadrant icons and bars, so any picked colour stays readable on the theme. */
+  --q-ink-min: 0;
+  --q-ink-max: 0.55;
   color-scheme: light;
 }
 
@@ -75,22 +62,8 @@
     --pri-low: #8e95a2;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.5);
     --overlay: rgb(0 0 0 / 0.55);
-
-    --q0: #161c2c;
-    --q0-chip: #26375c;
-    --q0-ink: #9dbbff;
-    --q1: #2a1a1b;
-    --q1-chip: #5b2c29;
-    --q1-ink: #ef8a7e;
-    --q2: #172520;
-    --q2-chip: #28503a;
-    --q2-ink: #6fcb95;
-    --q3: #282118;
-    --q3-chip: #5a4727;
-    --q3-ink: #e3ad5f;
-    --q4: #1d1d21;
-    --q4-chip: #3a3a42;
-    --q4-ink: #b4b4bd;
+    --q-ink-min: 0.76;
+    --q-ink-max: 1;
     color-scheme: dark;
   }
 }
@@ -124,12 +97,18 @@
   --font-sans: var(--font-inter), system-ui, sans-serif;
 }
 
-/* Quadrant scopes. Children use bg-q, bg-q-chip and text-q-ink. */
-.q-inbox { --q-bg: var(--q0); --q-chip: var(--q0-chip); --q-ink: var(--q0-ink); }
-.q-q1 { --q-bg: var(--q1); --q-chip: var(--q1-chip); --q-ink: var(--q1-ink); }
-.q-q2 { --q-bg: var(--q2); --q-chip: var(--q2-chip); --q-ink: var(--q2-ink); }
-.q-q3 { --q-bg: var(--q3); --q-chip: var(--q3-chip); --q-ink: var(--q3-ink); }
-.q-q4 { --q-bg: var(--q4); --q-chip: var(--q4-chip); --q-ink: var(--q4-ink); }
+/* Quadrant scopes. Children use bg-q, bg-q-chip and text-q-ink.
+   The --*-base colours and the tints come from each person's settings (lib/colours.ts, set on <main>). */
+.q-inbox { --q-base: var(--inbox-base); }
+.q-q1 { --q-base: var(--q1-base); }
+.q-q2 { --q-base: var(--q2-base); }
+.q-q3 { --q-base: var(--q3-base); }
+.q-q4 { --q-base: var(--q4-base); }
+.q-inbox, .q-q1, .q-q2, .q-q3, .q-q4 {
+  --q-bg: color-mix(in srgb, var(--q-base) var(--q-tint), var(--card));
+  --q-chip: color-mix(in srgb, var(--q-base) var(--q-chip-tint), var(--card));
+  --q-ink: oklch(from var(--q-base) clamp(var(--q-ink-min), l, var(--q-ink-max)) c h);
+}
 
 /* Tag palette. */
 .tag { background: var(--tag-bg); color: var(--tag-fg); }
