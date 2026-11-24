@@ -12,7 +12,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     <>
       <header className="sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-3 px-4 sm:gap-6 sm:px-6 lg:px-10">
-          <Link href="/" aria-label="ODOT home">
+          <Link href="/" aria-label="ODO+ home">
             <Logo />
           </Link>
           <NavLinks />
