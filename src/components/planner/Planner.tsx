@@ -13,6 +13,10 @@ import { BoardView, ListView, MatrixView, type ViewProps } from "./views";
 
 type QuadFilter = "all" | "inbox" | 1 | 2 | 3 | 4;
 
+// Chip rows wrap on wide screens and scroll sideways, edge to edge, on phones.
+const CHIP_ROW = "flex items-center gap-2 max-sm:-mx-4 max-sm:overflow-x-auto max-sm:px-4 max-sm:pb-1 sm:flex-wrap";
+const ROW_LABEL = "mr-1 shrink-0 text-[13px] font-semibold text-muted";
+
 const subscribeClock = (cb: () => void) => {
   const t = setInterval(cb, 60_000);
   window.addEventListener("focus", cb);
@@ -240,18 +244,19 @@ export function Planner({
   const pct = d.total ? Math.round((100 * d.done) / d.total) : 0;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 pb-20 pt-8 sm:px-6 lg:px-10">
-      <header className="flex flex-wrap items-start justify-between gap-4">
+    <div className="mx-auto flex w-full max-w-[1280px] flex-col gap-5 px-4 pb-36 pt-6 sm:gap-6 sm:px-6 sm:pb-20 sm:pt-8 lg:px-10">
+      {/* Phones: a grid with the title and date on one row and the progress bar below. `contents` lets the right-hand group join that grid. */}
+      <header className="grid grid-cols-[1fr_auto] items-start gap-x-3 gap-y-4 sm:flex sm:flex-wrap sm:justify-between sm:gap-4">
         <div>
-          <h1 className="text-[34px] font-bold leading-[1.1] tracking-[-0.02em] sm:text-[44px]">My tasks</h1>
-          <p className="mt-2 text-[17px] text-muted">Organise your priorities. Focus on what matters.</p>
+          <h1 className="text-[30px] font-bold leading-[1.1] tracking-[-0.02em] sm:text-[44px]">My tasks</h1>
+          <p className="mt-1.5 text-[15px] text-muted sm:mt-2 sm:text-[17px]">Organise your priorities. Focus on what matters.</p>
         </div>
-        <div className="flex items-center gap-3.5">
-          <div className="text-right">
-            <div className="text-sm font-semibold">
+        <div className="contents sm:flex sm:items-center sm:gap-3.5">
+          <div className="order-last col-span-2 flex flex-row-reverse items-center gap-3 sm:order-none sm:block sm:text-right">
+            <div className="shrink-0 text-sm font-semibold">
               {d.done} of {d.total} done today
             </div>
-            <div className="mt-1.5 h-1.5 w-40 rounded-full bg-surface-2" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Done today">
+            <div className="h-1.5 flex-1 rounded-full bg-surface-2 sm:mt-1.5 sm:w-40" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Done today">
               <div className="h-1.5 rounded-full bg-ok transition-[width] duration-500" style={{ width: `${pct}%` }} />
             </div>
           </div>
@@ -261,7 +266,7 @@ export function Planner({
         </div>
       </header>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[20px] bg-info-soft px-5 py-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-[20px] bg-info-soft px-5 py-4 max-sm:order-last">
         <TargetIcon size={20} className="shrink-0 text-info-ink" />
         <div className="min-w-0 flex-[1_1_260px]">
           <div className="text-[15px] font-semibold">
@@ -286,10 +291,11 @@ export function Planner({
         </div>
       </div>
 
-      <section aria-label="Filters" className="flex flex-col gap-3.5 rounded-[20px] border border-line bg-surface p-4">
+      <section aria-label="Filters" className="flex flex-col gap-3.5 rounded-[20px] border border-line bg-surface p-4 max-sm:border-0 max-sm:bg-transparent max-sm:p-0">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Segmented
             label="Area"
+            fill
             value={area}
             onChange={(area) => update({ area })}
             options={["all", ...areas].map((value) => ({
@@ -317,24 +323,25 @@ export function Planner({
             </label>
             <Segmented
               label="View"
+              fill
               value={prefs.view}
               onChange={(view) => update({ view })}
               options={[
-                { value: "matrix", label: <><MatrixIcon size={16} /><span className="hidden sm:inline">Matrix</span></>, title: "Matrix (1)" },
-                { value: "list", label: <><ListIcon size={16} /><span className="hidden sm:inline">List</span></>, title: "Focus list (2)" },
-                { value: "board", label: <><BoardIcon size={16} /><span className="hidden sm:inline">Board</span></>, title: "Status board (3)" },
+                { value: "matrix", label: <><MatrixIcon size={16} />Matrix</>, title: "Matrix (1)" },
+                { value: "list", label: <><ListIcon size={16} />List</>, title: "Focus list (2)" },
+                { value: "board", label: <><BoardIcon size={16} />Board</>, title: "Status board (3)" },
               ]}
             />
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-1 text-[13px] font-semibold text-muted">Tags</span>
+        <div className={CHIP_ROW}>
+          <span className={ROW_LABEL}>Tags</span>
           <button
             type="button"
             aria-pressed={tag === null}
             onClick={() => setTag(null)}
-            className={cx("h-9 rounded-full border-2 bg-surface-2 px-3.5 text-sm font-semibold", tag === null ? "border-fg" : "border-transparent")}
+            className={cx("h-11 shrink-0 rounded-full border-2 bg-surface-2 px-3.5 text-sm font-semibold sm:h-9", tag === null ? "border-fg" : "border-transparent")}
           >
             All tags <span className="opacity-75">{d.quadCount.get("all") ?? 0}</span>
           </button>
@@ -347,7 +354,7 @@ export function Planner({
                 type="button"
                 aria-pressed={on}
                 onClick={() => setTag(on ? null : t.name)}
-                className={cx("tag h-9 rounded-full border-2 px-3.5 text-sm font-semibold", `tag-${t.color}`, on ? "border-current" : "border-transparent", !n && !on && "opacity-50")}
+                className={cx("tag h-11 shrink-0 rounded-full border-2 px-3.5 text-sm font-semibold sm:h-9", `tag-${t.color}`, on ? "border-current" : "border-transparent", !n && !on && "opacity-50")}
               >
                 {t.name} <span className="opacity-75">{n}</span>
               </button>
@@ -356,15 +363,15 @@ export function Planner({
         </div>
 
         {prefs.view !== "matrix" && (
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="mr-1 text-[13px] font-semibold text-muted">Quadrant</span>
+          <div className={CHIP_ROW}>
+            <span className={ROW_LABEL}>Quadrant</span>
             {(["all", "inbox", 1, 2, 3, 4] as QuadFilter[]).map((v) => {
               const meta = typeof v === "number" ? QUADRANTS[v - 1] : null;
               return (
                 <Toggle
                   key={v}
                   on={quad === v}
-                  className="h-9 rounded-full"
+                  className="h-9 rounded-full max-sm:h-11"
                   onClick={() => {
                     setQuad(v);
                     if (v !== "all") setAddQuad(v === "inbox" ? null : v);
@@ -378,8 +385,8 @@ export function Planner({
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-1 text-[13px] font-semibold text-muted">Sort by</span>
+        <div className={CHIP_ROW}>
+          <span className={ROW_LABEL}>Sort by</span>
           {(
             [
               ["priority", "Priority"],
@@ -387,22 +394,25 @@ export function Planner({
               ["tag", "Tag A–Z"],
             ] as const
           ).map(([k, label]) => (
-            <Toggle key={k} on={prefs.sort === k} onClick={() => update({ sort: k, dir: 1 })}>
+            <Toggle key={k} on={prefs.sort === k} onClick={() => update({ sort: k, dir: 1 })} className="max-sm:h-11">
               {label}
             </Toggle>
           ))}
           <span className="mx-1 hidden h-6 w-px bg-line-strong sm:block" />
-          <Toggle on={prefs.hideDone} onClick={() => update({ hideDone: !prefs.hideDone })}>
+          <Toggle on={prefs.hideDone} onClick={() => update({ hideDone: !prefs.hideDone })} className="max-sm:h-11">
             Hide completed
           </Toggle>
           {prefs.view === "list" && (
-            <Toggle on={prefs.group} onClick={() => update({ group: !prefs.group })}>
+            <Toggle on={prefs.group} onClick={() => update({ group: !prefs.group })} className="max-sm:h-11">
               Group by quadrant
             </Toggle>
           )}
         </div>
 
-        <form onSubmit={add} className="flex flex-wrap items-center gap-2.5 border-t border-line-strong/70 pt-3.5">
+        <form
+          onSubmit={add}
+          className="flex flex-wrap items-center gap-2.5 border-t border-line-strong/70 pt-3.5 max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-20 max-sm:gap-2 max-sm:border-line max-sm:bg-surface max-sm:px-3 max-sm:pb-[max(12px,env(safe-area-inset-bottom))] max-sm:pt-2.5"
+        >
           <input
             ref={addRef}
             aria-label="New task"
@@ -410,17 +420,18 @@ export function Planner({
             maxLength={300}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className={cx(inputClass, "flex-[1_1_260px]")}
+            className={cx(inputClass, "flex-[1_1_260px] max-sm:basis-0")}
           />
+          <div className="flex gap-2.5 max-sm:order-first max-sm:w-full max-sm:gap-1.5">
           {/* Under an area tab the tab decides, so the picker only shows under All. */}
           {area === "all" && (
-            <select aria-label="Area for the new task" value={addArea} onChange={(e) => setAddArea(e.target.value)} className={cx(inputClass, "w-auto")}>
+            <select aria-label="Area for the new task" value={addArea} onChange={(e) => setAddArea(e.target.value)} className={cx(inputClass, "w-auto max-sm:max-w-32")}>
               {areas.map((a) => (
                 <option key={a}>{a}</option>
               ))}
             </select>
           )}
-          <div role="group" aria-label="Quadrant for the new task" className="flex gap-1.5">
+          <div role="group" aria-label="Quadrant for the new task" className="flex gap-1.5 max-sm:flex-1">
             {([null, 1, 2, 3, 4] as Quadrant[]).map((v) => (
               <Toggle
                 key={String(v)}
@@ -428,11 +439,12 @@ export function Planner({
                 onClick={() => setAddQuad(v)}
                 title={v ? `${QUADRANTS[v - 1].title}: ${QUADRANTS[v - 1].sub}` : "Inbox: classify later"}
                 aria-label={v ? QUADRANTS[v - 1].title : "Inbox"}
-                className="h-11 px-3"
+                className="h-11 px-3 max-sm:flex-1 max-sm:justify-center max-sm:px-0"
               >
                 {v ? `Q${v}` : <InboxIcon size={17} />}
               </Toggle>
             ))}
+          </div>
           </div>
           <Button type="submit" variant="primary">
             <PlusIcon size={17} />
@@ -468,7 +480,7 @@ export function Planner({
       )}
       {prefs.view === "board" && <BoardView {...viewProps} />}
 
-      <p className="text-center text-[13px] text-faint">
+      <p className="text-center text-[13px] text-faint max-sm:hidden">
         Shortcuts: <kbd>n</kbd> new task · <kbd>/</kbd> search · <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> switch view
       </p>
 

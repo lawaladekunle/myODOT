@@ -47,15 +47,22 @@ export function Segmented<T extends string | number>({
   onChange,
   label,
   size = "md",
+  fill,
 }: {
   value: T;
   options: { value: T; label: ReactNode; title?: string }[];
   onChange: (v: T) => void;
   label: string;
   size?: "sm" | "md";
+  /** Stretch to the full width on phones, with equal buttons. */
+  fill?: boolean;
 }) {
   return (
-    <div role="group" aria-label={label} className="inline-flex max-w-full gap-1 overflow-x-auto rounded-[14px] bg-surface-2 p-1">
+    <div
+      role="group"
+      aria-label={label}
+      className={cx("inline-flex max-w-full gap-1 overflow-x-auto rounded-[14px] bg-surface-2 p-1", fill && "max-sm:flex max-sm:w-full")}
+    >
       {options.map((o) => (
         <button
           key={o.value}
@@ -65,6 +72,7 @@ export function Segmented<T extends string | number>({
           onClick={() => onChange(o.value)}
           className={cx(
             "inline-flex shrink-0 items-center gap-1.5 rounded-[10px] font-semibold transition-all",
+            fill && "max-sm:flex-1 max-sm:justify-center",
             size === "md" ? "h-10 px-4 text-[15px]" : "h-8 px-3 text-[13px]",
             o.value === value ? "bg-card text-fg shadow-[0_1px_3px_rgb(0_0_0/0.15)]" : "text-muted hover:text-fg",
           )}

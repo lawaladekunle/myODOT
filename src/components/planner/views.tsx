@@ -165,14 +165,14 @@ function InboxPanel(p: ViewProps) {
               {t.notes && <p className="mt-0.5 line-clamp-1 text-[15px] text-muted">{t.notes}</p>}
               <Meta t={t} today={p.today} tagColor={p.tagColor} onQuadrant />
             </div>
-            <div role="group" aria-label={`Classify ${t.title}`} className="flex gap-1.5 pl-9 sm:pl-0">
+            <div role="group" aria-label={`Classify ${t.title}`} className="flex gap-1.5 pl-9 max-sm:w-full sm:pl-0">
               {QUADRANTS.map((q) => (
                 <button
                   key={q.id}
                   type="button"
                   title={`${q.title}: ${q.sub}`}
                   onClick={() => p.onPatch(t.id, { quadrant: q.id })}
-                  className={cx(`q-q${q.id}`, "h-9 rounded-lg bg-q-chip px-3 text-[13px] font-bold text-fg transition-transform hover:-translate-y-px")}
+                  className={cx(`q-q${q.id}`, "h-9 rounded-lg bg-q-chip px-3 text-[13px] font-bold text-fg transition-transform hover:-translate-y-px max-sm:h-11 max-sm:flex-1")}
                 >
                   {q.name}
                 </button>
@@ -279,30 +279,58 @@ const COLUMNS: { status: Status; label: string; dot: string; hint?: string }[] =
 ];
 
 export function BoardView(p: ViewProps) {
+  // Phones show one column at a time, picked with these tabs.
+  const [tab, setTab] = useState<Status>("todo");
+  const cols = COLUMNS.map((c) => ({ c, tasks: p.tasks.filter((t) => t.status === c.status) }));
   return (
-    <div className="grid items-start gap-5 md:grid-cols-3">
-      {COLUMNS.map((c) => (
-        <BoardColumn key={c.status} col={c} {...p} tasks={p.tasks.filter((t) => t.status === c.status)} />
-      ))}
+    <div className="flex flex-col gap-4">
+      <div role="group" aria-label="Status" className="flex border-b border-line md:hidden">
+        {cols.map(({ c, tasks }) => (
+          <button
+            key={c.status}
+            type="button"
+            aria-pressed={tab === c.status}
+            onClick={() => setTab(c.status)}
+            className={cx(
+              "-mb-px flex min-h-11 flex-1 items-center justify-center gap-1.5 border-b-[3px] text-[15px] font-semibold",
+              tab === c.status ? "border-fg text-fg" : "border-transparent text-muted",
+            )}
+          >
+            {c.label}
+            <span className="rounded-full bg-surface-2 px-2 text-[13px]">{tasks.length}</span>
+          </button>
+        ))}
+      </div>
+      <div className="grid items-start gap-5 md:grid-cols-3">
+        {cols.map(({ c, tasks }) => (
+          <BoardColumn key={c.status} col={c} {...p} tasks={tasks} className={c.status === tab ? undefined : "max-md:hidden"} />
+        ))}
+      </div>
     </div>
   );
 }
 
-function BoardColumn({ col, ...p }: ViewProps & { col: (typeof COLUMNS)[number] }) {
+function BoardColumn({ col, className, ...p }: ViewProps & { col: (typeof COLUMNS)[number]; className?: string }) {
   const drop = useDrop((id) => p.onPatch(id, { status: col.status }));
   return (
     <section
       aria-label={col.label}
       {...drop.props}
-      className={cx("flex min-w-0 flex-col gap-3 rounded-3xl bg-surface-2/70 p-3.5 transition-shadow", drop.over && "ring-2 ring-ink/30")}
+      className={cx("flex min-w-0 flex-col gap-3 rounded-3xl bg-surface-2/70 p-3.5 transition-shadow", drop.over && "ring-2 ring-ink/30", className)}
     >
-      <div className="flex items-center gap-2.5 px-1.5 pt-1">
+      {col.hint && <p className="px-1.5 text-[13px] text-muted md:hidden">Showing the {col.hint}.</p>}
+      <div className="flex items-center gap-2.5 px-1.5 pt-1 max-md:hidden">
         <span className={cx("size-3 rounded-full", col.dot)} />
         <h2 className="text-lg font-semibold">{col.label}</h2>
         {col.hint && <span className="text-[13px] text-muted">{col.hint}</span>}
         <span className="ml-auto rounded-full bg-card px-2.5 py-0.5 text-[13px] font-semibold">{p.tasks.length}</span>
       </div>
-      {p.tasks.length === 0 && <p className="px-2 py-8 text-center text-sm text-muted">Drop tasks here</p>}
+      {p.tasks.length === 0 && (
+        <p className="px-2 py-8 text-center text-sm text-muted">
+          <span className="max-md:hidden">Drop tasks here</span>
+          <span className="md:hidden">Nothing here.</span>
+        </p>
+      )}
       {p.tasks.map((t) => (
         <BoardCard key={t.id} t={t} {...p} />
       ))}

@@ -11,7 +11,7 @@ export function Toast({ toast, onDone }: { toast: ToastState | null; onDone: () 
   }, [toast, onDone]);
 
   return (
-    <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4">
+    <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4 max-sm:bottom-auto max-sm:top-20">
       {toast && (
         <div
           key={toast.id}
