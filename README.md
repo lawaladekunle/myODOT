@@ -263,7 +263,7 @@ scripts/backup.mjs  Backup with VACUUM INTO
 
 ## Development
 
-You need Node.js 22.5 or later. ODO+ uses the built-in `node:sqlite` module.
+You need Node.js 22.13 or later. ODO+ uses the built-in `node:sqlite` module, and older versions of Node.js 22 load it only with the `--experimental-sqlite` flag.
 
 1. Install the packages.
 
