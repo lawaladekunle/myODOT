@@ -1,0 +1,16 @@
+services:
+  odot:
+    build: .
+    image: odot:latest
+    container_name: odot
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      # Bound to localhost so the login page is never served over plain HTTP on the internet.
+      # Put a reverse proxy with HTTPS in front on the VPS (see README).
+      - "127.0.0.1:${ODOT_PORT:-3000}:3000"
+    volumes:
+      - odot-data:/data
+
+volumes:
+  odot-data:

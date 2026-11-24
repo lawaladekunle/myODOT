@@ -1,0 +1,186 @@
+@import "tailwindcss";
+
+/* Colours come from the three design mockups. Dark values are tuned to keep the same contrast. */
+:root {
+  --bg: #ffffff;
+  --fg: #1c1c1e;
+  --muted: #5f5f66;
+  --faint: #8d8d95;
+  --surface: #fafafb;
+  --surface-2: #ececf0;
+  --card: #ffffff;
+  --line: #ececf0;
+  --line-strong: #dcdce2;
+  --ink: #1c1c1e;
+  --ink-fg: #ffffff;
+  --ok: #2e7d4f;
+  --ok-soft: #e3f3e5;
+  --ok-ink: #1d6b2f;
+  --info-soft: #f3f6ff;
+  --info-chip: #dfe9fc;
+  --info-ink: #1d4fbf;
+  --hot-soft: #fbdcd8;
+  --hot-ink: #9b2318;
+  --chip: #efeff2;
+  --chip-ink: #3d3d44;
+  --pri-high: #c0392b;
+  --pri-medium: #d28a1c;
+  --pri-low: #6b7280;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+  --overlay: rgb(15 15 20 / 0.35);
+
+  --q0: #f3f6ff;
+  --q0-chip: #dfe9fc;
+  --q0-ink: #1d4fbf;
+  --q1: #faeded;
+  --q1-chip: #f3c9c6;
+  --q1-ink: #c0392b;
+  --q2: #eef4f0;
+  --q2-chip: #c9e3d2;
+  --q2-ink: #2e7d4f;
+  --q3: #f8f3ea;
+  --q3-chip: #f0dfbd;
+  --q3-ink: #a8691a;
+  --q4: #f0f0f3;
+  --q4-chip: #dcdce3;
+  --q4-ink: #55555c;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f0f11;
+    --fg: #ececf0;
+    --muted: #a3a3ab;
+    --faint: #75757e;
+    --surface: #161619;
+    --surface-2: #26262b;
+    --card: #1c1c20;
+    --line: #26262b;
+    --line-strong: #35353c;
+    --ink: #ececf0;
+    --ink-fg: #121214;
+    --ok: #4fae78;
+    --ok-soft: #173322;
+    --ok-ink: #8fd8ab;
+    --info-soft: #161c2c;
+    --info-chip: #1f2a44;
+    --info-ink: #9dbbff;
+    --hot-soft: #45201c;
+    --hot-ink: #f6b2a9;
+    --chip: #2a2a30;
+    --chip-ink: #c9c9d0;
+    --pri-high: #ef6b5c;
+    --pri-medium: #e8a443;
+    --pri-low: #8e95a2;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.5);
+    --overlay: rgb(0 0 0 / 0.55);
+
+    --q0: #161c2c;
+    --q0-chip: #26375c;
+    --q0-ink: #9dbbff;
+    --q1: #2a1a1b;
+    --q1-chip: #5b2c29;
+    --q1-ink: #ef8a7e;
+    --q2: #172520;
+    --q2-chip: #28503a;
+    --q2-ink: #6fcb95;
+    --q3: #282118;
+    --q3-chip: #5a4727;
+    --q3-ink: #e3ad5f;
+    --q4: #1d1d21;
+    --q4-chip: #3a3a42;
+    --q4-ink: #b4b4bd;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-card: var(--card);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-fg: var(--ink-fg);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-ok-ink: var(--ok-ink);
+  --color-info-soft: var(--info-soft);
+  --color-info-chip: var(--info-chip);
+  --color-info-ink: var(--info-ink);
+  --color-hot-soft: var(--hot-soft);
+  --color-hot-ink: var(--hot-ink);
+  --color-chip: var(--chip);
+  --color-chip-ink: var(--chip-ink);
+  --color-q: var(--q-bg);
+  --color-q-chip: var(--q-chip);
+  --color-q-ink: var(--q-ink);
+  --shadow-card: var(--shadow);
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+}
+
+/* Quadrant scopes. Children use bg-q, bg-q-chip and text-q-ink. */
+.q-inbox { --q-bg: var(--q0); --q-chip: var(--q0-chip); --q-ink: var(--q0-ink); }
+.q-q1 { --q-bg: var(--q1); --q-chip: var(--q1-chip); --q-ink: var(--q1-ink); }
+.q-q2 { --q-bg: var(--q2); --q-chip: var(--q2-chip); --q-ink: var(--q2-ink); }
+.q-q3 { --q-bg: var(--q3); --q-chip: var(--q3-chip); --q-ink: var(--q3-ink); }
+.q-q4 { --q-bg: var(--q4); --q-chip: var(--q4-chip); --q-ink: var(--q4-ink); }
+
+/* Tag palette. */
+.tag { background: var(--tag-bg); color: var(--tag-fg); }
+.tag-blue { --tag-bg: #e1ecfa; --tag-fg: #1a4a85; }
+.tag-green { --tag-bg: #e2f2e5; --tag-fg: #1b6430; }
+.tag-purple { --tag-bg: #ece4f9; --tag-fg: #56379a; }
+.tag-red { --tag-bg: #fae3ea; --tag-fg: #97233f; }
+.tag-amber { --tag-bg: #faeed8; --tag-fg: #7f5400; }
+.tag-teal { --tag-bg: #dff1f1; --tag-fg: #116467; }
+.tag-gray { --tag-bg: #e8e8ed; --tag-fg: #45454f; }
+.tag-orange { --tag-bg: #fde7d6; --tag-fg: #8f3d0b; }
+.tag-pink { --tag-bg: #fbe2f2; --tag-fg: #8c1d63; }
+.tag-indigo { --tag-bg: #e4e6fb; --tag-fg: #343c9a; }
+
+@media (prefers-color-scheme: dark) {
+  .tag-blue { --tag-bg: #1c2b44; --tag-fg: #9cc2f5; }
+  .tag-green { --tag-bg: #183222; --tag-fg: #8fd6a2; }
+  .tag-purple { --tag-bg: #2a2140; --tag-fg: #c5aef2; }
+  .tag-red { --tag-bg: #3d1b25; --tag-fg: #f2a6bb; }
+  .tag-amber { --tag-bg: #3a2c13; --tag-fg: #efc56f; }
+  .tag-teal { --tag-bg: #143233; --tag-fg: #87d3d3; }
+  .tag-gray { --tag-bg: #2a2a30; --tag-fg: #c2c2ca; }
+  .tag-orange { --tag-bg: #3d2415; --tag-fg: #f5b07f; }
+  .tag-pink { --tag-bg: #3b1a30; --tag-fg: #f1a2d4; }
+  .tag-indigo { --tag-bg: #22254a; --tag-fg: #b0b6f6; }
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--info-ink);
+  outline-offset: 2px;
+}
+
+@keyframes odot-slide-in {
+  from { transform: translateX(24px); opacity: 0; }
+}
+@keyframes odot-fade-in {
+  from { opacity: 0; }
+}
+@keyframes odot-pop {
+  from { transform: translateY(8px); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
