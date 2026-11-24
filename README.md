@@ -10,6 +10,7 @@ A self-hosted task planner that uses the Eisenhower matrix. An AI agent can sort
 ![SQLite](https://img.shields.io/badge/SQLite-node%3Asqlite-003b57?logo=sqlite&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ed?logo=docker&logoColor=white)
 ![MCP](https://img.shields.io/badge/MCP-Streamable%20HTTP-6b4fbb)
+[![License: MIT](https://img.shields.io/badge/License-MIT-2e7d4f)](LICENSE)
 
 ![The ODO+ planner in Matrix view](docs/screenshots/matrix.png)
 
@@ -27,6 +28,7 @@ A self-hosted task planner that uses the Eisenhower matrix. An AI agent can sort
 - [How it works](#how-it-works)
 - [Development](#development)
 - [How to contribute](#how-to-contribute)
+- [License](#license)
 
 ## Features
 
@@ -299,3 +301,7 @@ The stack is Next.js 16 with the App Router, React 19, Tailwind CSS 4, `node:sql
 2. Make a branch from `main`.
 3. Run the tests, the linter and the type check.
 4. Open a pull request that links to the issue.
+
+## License
+
+You can use, change and share ODO+ under the terms of the MIT License. The full text is in [LICENSE](LICENSE).
